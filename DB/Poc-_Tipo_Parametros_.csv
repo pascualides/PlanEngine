@@ -1,0 +1,11 @@
+"tip_par_id","tip_par_nombre","tip_par_nombre_int","tip_par_tipo"
+1,Ordenar por,sort_by,lista
+2,Condicion,condition_expression,unico
+3,df entrada,named_input,unico
+4,df salida,named_output,unico
+5,Expresion,column_expression,unico
+6,Nombre columna,output_column,unico
+7,Entrada izquierda,named_input_left,unico
+8,Entrada derecha,named_input_right,unico
+9,Estricto,strict,boolean
+10,Columnas,columns,lista

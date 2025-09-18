@@ -1,0 +1,7 @@
+"tip_reg_id","tip_reg_nombre","tip_reg_nombre_int"
+1,Ordenar,SortRule
+2,Renombrar,RenameRule
+3,Filtrar,FilterRule
+4,Agregar Columna,AddNewColumnRule
+5,Concatencacion Vertical,VConcatRule
+6,Sumatoria de Columnas,SumColumnsRule

@@ -1,0 +1,62 @@
+val_id,val_llave,val_valor,val_param_id
+1,,A,1
+4,,df_automotor,4
+6,,nuevo_valor,6
+8,,df_automotor1,8
+9,,200,9
+10,,fondo_solidario,10
+11,,df_automotor1,11
+12,,df_automotor2,12
+14,,administrativo,14
+15,,df_automotor2,16
+16,,df_automotor3,17
+18,,caminera,19
+19,,df_automotor3,20
+20,,df_automotor4,21
+22,,bomberos,23
+23,,df_automotor4,25
+24,,df_automotor5,26
+25,,df['nuevo_valor'] * 0.2,27
+26,,municipalidad,28
+27,,df_automotor5,29
+28,,df_automotor6,30
+29,,df['nuevo_valor'] * 0.3,31
+30,,provincia,32
+31,,df_automotor6,33
+32,,df_automotor7,34
+33,,df['Detalle'] == 'Inmueble',39
+34,,input,40
+35,,df_inmueble,41
+36,,df['Valor'] * 0.5,42
+37,,fondos_especiales,43
+38,,df_inmueble,44
+39,,df_inmueble1,45
+40,,df['Valor'] * 0.4,46
+41,,provincia,47
+42,,df_inmueble1,48
+43,,df_inmueble2,49
+44,,df['Valor'] * 0.1,50
+45,,administrativo,51
+46,,df_inmueble2,52
+47,,df_inmueble3,53
+48,,df_automotor7,54
+49,,df_inmueble3,55
+50,,False,56
+51,,final,57
+52,,final,59
+53,,total,60
+54,,fondo_solidario,58
+55,,administrativo,58
+56,,caminera,58
+57,,bomberos,58
+58,,municipalidad,58
+59,,provincia,58
+60,,fondos_especiales,58
+61,,fondo_solidario,58
+2,,df['Detalle'] == 'Automotor',2
+7,,df_automotor,7
+3,,input,3
+5,,df['Valor'] - 200,5
+17,,df['nuevo_valor'] * 0.3,18
+21,,df['nuevo_valor'] * 0.1,22
+13,,df['nuevo_valor'] * 0.1,13
