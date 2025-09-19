@@ -9,28 +9,45 @@ from datetime import datetime
 class GestorEjecucion:
     def __init__(
         self,
-        plan: int,
         input_data: pd.DataFrame,
         input_name: str = 'input'        
     ):
-        self.plan_id = plan
         self.input_data = input_data
-        try:
-            self.plan = get_plan_df(self.plan_id)
-            self.data = RuleData(named_inputs={input_name: self.input_data})
-            self.rule_engine = RuleEngine(self.plan)
-        except Exception as e:
-            error = f'Error al cargar el plan {self.plan_id}:\n {type(e).__name__}: {e}'
-            raise Exception(error) from None
-            
+        self.data = RuleData(named_inputs={input_name: self.input_data})
 
-    def ejecutar(self):
+
+    def ejecutar_plan(self, plan_id):
+        # try:
+        #     self.plan_id = plan_id
+        #     self.plan = get_plan_df(plan_id)
+        #     self.rule_engine = RuleEngine(self.plan)
+        # except Exception as e:
+        #     error = f'Error al cargar el plan {self.plan_id}:\n {type(e).__name__}: {e}'
+        #     raise Exception(error) from None
+
+        self.set_plan(plan_id)
+    
         try:
             self.rule_engine.run(self.data)
         except Exception as e:
             error = f" Error al ejecutar el plan {self.plan_id}: \n{type(e).__name__}: {e}"
             raise Exception(error) from None
+        
+    
+    def ejecutar_metaplan(self, metaplan_id):
+        metaplan = get_registro_by_params('MetaplanXplan', {'mxp_meta_id': metaplan_id})
+        if len(metaplan) == 0:
+            raise Exception(f'No se encontró el metaplan con id {metaplan_id}')
+               
+        for _, row in metaplan.iterrows():
+            plan_id = int(row['mxp_plan_id'])
+            self.ejecutar_plan(plan_id)
 
+            salidas = get_registro_by_params('Salidas', {'sal_plan_id': self.plan_id})
+            res = {}
+            for nombre in salidas['sal_nombre_df'].to_list():
+                 self.data = RuleData(named_inputs={'input': self.data.get_named_output(nombre), nombre: self.data.get_named_output(nombre)})
+            return res
 
     def get_salidas(self):
         salidas = get_registro_by_params('Salidas', {'sal_plan_id': self.plan_id})
@@ -48,8 +65,8 @@ class GestorEjecucion:
         except Exception as e:
             error = f'Error al cargar el plan {self.plan_id}:\n {type(e).__name__}: {e}'
             raise Exception(error) from None
-        
-        
+    
+   
     def get_data(self):
         return self.data
 

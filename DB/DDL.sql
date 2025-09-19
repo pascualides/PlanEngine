@@ -1,7 +1,10 @@
 create table public."Plan" (
 	plan_id serial4 not null,
 	plan_name text not null,
+	plan_orden int4 null,
+	plan_meta_id serial4 null,
 	constraint "Plan_pk" primary key (plan_id)
+	constraint "Plan_fk_meta_plan" foreign key ("plan_meta_id") references public."Metaplan"(met_id) on delete set null on update cascade,
 );
 
 create table public."Tipo_Regla" (
@@ -55,4 +58,20 @@ create table public."Salidas" (
 	sal_plan_id serial4 not null,
 	constraint "Salida_pk" primary key (sal_id),
 	constraint "Salida_fk_plan" foreign key ("sal_plan_id") references public."Plan"(plan_id) on delete set null on update cascade
+);
+
+create table public."Metaplan" (
+	met_id serial4 not null,
+	met_nombre text not null,
+	constraint "Metaplan_pk" primary key (met_id)
+);
+
+create table public."MetaplanXplan" (
+	mxp_id serial4 not null,
+	mxp_plan_id int4 not null,
+	mxp_meta_id int4 not null,
+	mxp_orden int4 not null,
+	constraint "MetXplan_pk" primary key (mxp_id),
+	constraint "MetXplan_fk_plan" foreign key ("mxp_plan_id") references public."Plan"(plan_id) on delete set null on update cascade,
+	constraint "MetXplan_fk_meta" foreign key ("mxp_meta_id") references public."Metaplan"(met_id) on delete set null on update cascade
 );

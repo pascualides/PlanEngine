@@ -16,11 +16,13 @@ if __name__ == '__main__':
     ])
     
     try:
-        gestor = GestorEjecucion(plan=2, input_data=input_df, input_name='input')
-        gestor.ejecutar()
+        gestor = GestorEjecucion(input_data=input_df, input_name='input')
+        
+        #gestor.ejecutar_plan(2)
+        gestor.ejecutar_metaplan(3)
 
         res = gestor.get_salidas()
-        
+
         print('Final', datetime.now())
          
         for key, df in res.items():
