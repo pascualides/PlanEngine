@@ -10,14 +10,18 @@ class GestorEjecucion:
     def __init__(
         self,
         plan: int,
-        input_data: pd.DataFrame,
-        input_name: str = 'input'        
+        input_data: pd.DataFrame = None,
+        input_name: str = 'input',
+        named_inputs: dict = None,        
     ):
         self.plan_id = plan
         self.input_data = input_data
         try:
             self.plan = get_plan_df(self.plan_id)
-            self.data = RuleData(named_inputs={input_name: self.input_data})
+            if not named_inputs:
+                self.data = RuleData(named_inputs={input_name: self.input_data})
+            else:
+                self.data = RuleData(named_inputs=named_inputs)
             self.rule_engine = RuleEngine(self.plan)
         except Exception as e:
             error = f'Error al cargar el plan {self.plan_id}:\n {type(e).__name__}: {e}'
@@ -63,7 +67,7 @@ def get_plan_df(id_plan):
     reglas_df = get_reglas(id_plan)
     if len(reglas_df) == 0:
         return
-    reglas_df.sort_values(by='reg_orden')
+    reglas_df = reglas_df.sort_values(by='reg_orden')
 
     for row in reglas_df['reg_id'].unique():
         params_dict = {}
@@ -75,6 +79,8 @@ def get_plan_df(id_plan):
                 params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0]
             elif par_row['tip_par_tipo'] == 'boolean':
                 params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0] == 'True'
+            elif par_row['tip_par_tipo'] == 'int':
+                params_dict[par_row['tip_par_nombre_int']] = int(parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0])
 
         regla_obj = RULES_MAP.get(parametros_df['tip_reg_nombre_int'].iloc[0])
 
