@@ -9,3 +9,13 @@
 8,Entrada derecha,named_input_right,unico
 9,Estricto,strict,boolean
 10,Columnas,columns,lista
+11,Columnas claves izquierda,key_columns_left,lista
+12,Columnas claves derecha,key_columns_right,lista
+13,Columna,column,unico
+14,Dia Primero,dayfirst,boolean
+15,Columna entrada 1,input_column,unico
+16,Columna entrada 2,input_column2,unico
+17,Unidad,unit,unico
+18,Expresion Else,false_expr,unico
+19,Expresion Then,true_expr,unico
+20,Escala,scale,int

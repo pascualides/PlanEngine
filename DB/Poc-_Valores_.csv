@@ -1,9 +1,13 @@
-val_id,val_llave,val_valor,val_param_id
+"val_id","val_llave","val_valor","val_param_id"
+85,,MODELO,85
+86,,MODELO,86
+87,,df_motos_parametros,87
+88,,df_parametros,88
 1,,A,1
 4,,df_automotor,4
 6,,nuevo_valor,6
 8,,df_automotor1,8
-9,,200,9
+9,,"200",9
 10,,fondo_solidario,10
 11,,df_automotor1,11
 12,,df_automotor2,12
@@ -53,10 +57,107 @@ val_id,val_llave,val_valor,val_param_id
 59,,provincia,58
 60,,fondos_especiales,58
 61,,fondo_solidario,58
+89,,df_joined,89
 2,,df['Detalle'] == 'Automotor',2
+90,,(df['CILINDRADA'] >= df['CILINDRADA_DESDE']) & (df['CILINDRADA'] <= df['CILINDRADA_HASTA']),90
+91,,df_joined,91
+92,,df_joined_filtered_range,92
 7,,df_automotor,7
+93,,FECHA_INICIO,93
+94,,True,94
+95,,df_joined_filtered_range,95
+96,,df_converted_fecha_inicio,96
+97,,PRIMER_DIA,97
 3,,input,3
+98,,True,98
+99,,df_converted_fecha_inicio,99
+100,,df_con_primer_dia_converted,100
+101,,ULTIMO_DIA,101
+102,,True,102
+103,,df_con_primer_dia_converted,103
+104,,df_con_ultimo_dia_converted,104
 5,,df['Valor'] - 200,5
+105,,ULTIMO_DIA,105
+106,,FECHA_INICIO,106
+107,,days,107
 17,,df['nuevo_valor'] * 0.3,18
+108,,DIAS_ULTIMO,108
+109,,df_con_ultimo_dia_converted,109
 21,,df['nuevo_valor'] * 0.1,22
+110,,df_con_dias_fin,110
 13,,df['nuevo_valor'] * 0.1,13
+63,,input,62
+62,,df['Detalle'] == 'Inmueble',61
+64,,inmuebles,63
+111,,FECHA_INICIO,111
+66,,Deposito,66
+67,,input,67
+68,,Deposito,68
+65,,df['Valor']*0.5,65
+69,,(df['CILINDRADA'] < 300) & (df['IDENTIFICADOR'] == 1),69
+70,,df_motos,70
+71,,df_motos_filtered,71
+72,,"1",72
+73,,ID_PAR,73
+74,,df_par_gral,74
+75,,df_par_gral_id,75
+76,,"1",76
+77,,ID_PAR,77
+78,,df_motos_filtered,78
+79,,df_motos_filtered_id,79
+80,,ID_PAR,80
+81,,ID_PAR,81
+82,,df_motos_filtered_id,82
+83,,df_par_gral_id,83
+84,,df_motos_parametros,84
+112,,PRIMER_DIA,112
+113,,days,113
+114,,DIAS,114
+115,,df_con_dias_fin,115
+116,,df_con_diferencia_dias,116
+117,,df['FECHA_INICIO'] <= df['PRIMER_DIA'],117
+118,,df['VALOR'],118
+119,,df['DIAS_ULTIMO'] * (df['VALOR'] / 365),119
+120,,TOTAL_IMPUESTO,120
+121,,df_con_diferencia_dias,121
+122,,df_total_calculado,122
+123,,TOTAL_IMPUESTO,123
+125,,df_total_calculado,125
+126,,df_total_rounded,126
+129,,"0",129
+130,,TOTAL_TOPE_935,130
+131,,df_total_rounded,131
+132,,df_tope_935,132
+133,,TOTAL_TOPE_935,133
+134,,"2",134
+135,,df_tope_935,135
+136,,df_tope_935_rounded,136
+137,,df['EXENCION'] > 0,137
+138,,(df['TOTAL_IMPUESTO'] + df['TOTAL_TOPE_935']) * df['EXENCION'] * -1,138
+139,,"0",139
+140,,TOTAL_EXENCION,140
+141,,df_tope_935_rounded,141
+142,,df_total_exencion,142
+143,,TOTAL_EXENCION,143
+144,,"2",144
+128,,(df['TOTAL_IMPUESTO'] - (df['IMPUESTO_ANTERIOR'] * df['TOPE_MAXIMO'])) * (-1),128
+124,,"2",124
+145,,df_total_exencion,145
+146,,df_total_exencion_rounded,146
+147,,TOTAL_DESCUENTO_163,147
+149,,df_total_exencion_rounded,149
+150,,df_total_descuento_163,150
+151,,TOTAL_DESCUENTO_163,151
+152,,"2",152
+153,,df_total_descuento_163,153
+154,,df_total_descuento_163_rounded,154
+155,,SALDO_POSICION,155
+157,,df_total_descuento_163_rounded,157
+158,,df_saldo_posicion,158
+159,,SALDO_POSICION,159
+160,,"2",160
+161,,df_saldo_posicion,161
+162,,df_final,162
+127,,(df['IMPUESTO_ANTERIOR'] > 0) & (df['TOTAL_IMPUESTO'] > (df['IMPUESTO_ANTERIOR'] * df['TOPE_MAXIMO'])),127
+148,,(df['TOTAL_IMPUESTO'] + df['TOTAL_TOPE_935'] + df['TOTAL_EXENCION']) * df['DESCUENTO_ANUAL'] * (-1),148
+156,,df['TOTAL_IMPUESTO'] + df['TOTAL_TOPE_935'] + df['TOTAL_EXENCION'] + df['TOTAL_DESCUENTO_163'],156

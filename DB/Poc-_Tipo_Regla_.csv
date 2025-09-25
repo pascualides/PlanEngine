@@ -5,3 +5,9 @@
 4,Agregar Columna,AddNewColumnRule
 5,Concatencacion Vertical,VConcatRule
 6,Sumatoria de Columnas,SumColumnsRule
+7,If Then Else,IfThenElseRule
+8,Inner Join,InnerJoinRule
+9,Convert to Datetime,ConvertToDatetimeRule
+10,Diferencia Entre Fechas,DateTimeDiffRule
+11,If Then Else Calculado,IfThenElseCalcRule
+12,Redondeo,RoundRule
