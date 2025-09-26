@@ -1,0 +1,5 @@
+"tes_id","tes_nombre","tes_descripcion"
+1,PENDIENTE,Pendiente de ejecucion
+2,EN PROCESO,Esta siendo procesado
+3,FINALIZADO,El proceso termino correctamente 
+4,ERROR,El proceso finalizo de manera incorrecta

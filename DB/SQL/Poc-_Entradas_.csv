@@ -1,0 +1,4 @@
+"ent_id","ent_id_ejecutor","ent_ubicacion","ent_nombre"
+2,2,Archivos/Entrada/motos_menos_300.csv,df_motos
+3,2,Archivos/Entrada/Parametros2.csv,df_parametros
+4,2,Archivos/Entrada/Parametros_generales.csv,df_par_gral
