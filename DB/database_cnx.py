@@ -43,7 +43,7 @@ def get_comprobantes(entidad, fecha_min, fecha_max):
     try:
         logging.info('BUSCANDO COMPROBANTES')
 
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         comprobantes = Table('comprobantes', metadata_obj, autoload_with=engine)
         df = None
 
@@ -71,7 +71,7 @@ def get_comprobantes_por_comercio(nro_comercio, fecha_min, fecha_max):
     try:
         logging.info('BUSCANDO COMPROBANTES')
 
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         comprobantes = Table('comprobantes', metadata_obj, autoload_with=engine)
         df = None
 
@@ -99,7 +99,7 @@ def get_pagos_rendicion(id_ente, fecha_inf, fecha_clearing):
     try:
         logging.info('BUSCANDO PAGOS INCLUIDOS')
 
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         pagos = Table('registros', metadata_obj, autoload_with=engine)
         ren_det = Table('rendiciones_det', metadata_obj, autoload_with=engine)
         df = None
@@ -131,7 +131,7 @@ def get_pagos_incluidos(id_ente, fecha_inf, fecha_clearing):
     try:
         logging.info('BUSCANDO PAGOS INCLUIDOS')
 
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         pagos = Table('registros', metadata_obj, autoload_with=engine)
         ren_det = Table('rendiciones_det', metadata_obj, autoload_with=engine)
         df = None
@@ -160,7 +160,7 @@ def get_pagos_incluidos(id_ente, fecha_inf, fecha_clearing):
 
 def update_fileupload(nombre_archivo, estado, new_estado, resultado):
     try:
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table('fileupload', metadata_obj, autoload_with=engine)
         stmt = table.update().where(
             (table.c['fup_nombre_archivo'] == nombre_archivo) & (table.c['fup_estado'] == estado)).values(
@@ -176,7 +176,7 @@ def update_fileupload(nombre_archivo, estado, new_estado, resultado):
 
 def get_pagos_por_comision(ente, fecha_desde, fecha_hasta, considerar_metodo, metodo):
     try:
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table('registros', metadata_obj, autoload_with=engine)
 
         df = None
@@ -231,7 +231,7 @@ def get_registro_by_params(table_name, where_dict):
 
 def get_registro_with_like(table_name, equal_dict, like_dict):
     try:
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
 
         conditions = []
@@ -315,7 +315,7 @@ def get_table(table_name):
 
 def update_registro_estado(table_name, where_dict, set_dict):
     try:
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
 
         conditions = []
@@ -323,7 +323,8 @@ def update_registro_estado(table_name, where_dict, set_dict):
             conditions.append(table.c[column] == value)
 
         with engine.connect() as conn:
-            result = conn.execute(table.update().where(and_(*conditions)).values(set_dict))
+            conn.execute(table.update().where(and_(*conditions)).values(set_dict))
+            conn.commit()
 
     except Exception as e:
         logging.error('%s - %s', 'update_registro_estado', str(e))
@@ -333,7 +334,7 @@ def update_registro_estado(table_name, where_dict, set_dict):
 def update_table_by_id(table_name, df_idx, column_id, set_dict):
     try:
         if len(df_idx) > 0:
-            metadata_obj = MetaData(bind=engine)
+            metadata_obj = MetaData()
             table = Table(table_name, metadata_obj, autoload_with=engine)
             df_idx = df_idx.rename(columns={column_id: 'id'})
             stmt = table.update().where(table.c[column_id] == bindparam('id')).values(set_dict)
@@ -349,7 +350,7 @@ def update_table_by_id(table_name, df_idx, column_id, set_dict):
 def update_registros_by_id(table_name, df_idx, id_origen, id_destino, set_dict):
     try:
         if len(df_idx) > 0:
-            metadata_obj = MetaData(bind=engine)
+            metadata_obj = MetaData()
             table = Table(table_name, metadata_obj, autoload_with=engine)
             df_idx = df_idx.rename(columns={id_origen: 'id'})
             stmt = table.update().where(table.c[id_destino] == bindparam('id')).values(set_dict)
@@ -362,24 +363,12 @@ def update_registros_by_id(table_name, df_idx, id_origen, id_destino, set_dict):
         raise Exception()
 
 
-def insert_table(table_name, df):
-    try:
-        metadata_obj = MetaData(bind=engine)
-        table = Table(table_name, metadata_obj, autoload_with=engine)
 
-        df = df.replace({np.nan: None, 'nan': None})
-
-        with engine.connect() as conn:
-            conn.execute(table.insert(), df.to_dict('records'))
-
-    except Exception as e:
-        logging.error('%s - %s', 'insert_table', str(e))
-        raise Exception()
 
 
 def insert_return_idx(table_name, df, column_return):
     try:
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
 
         df = df.replace({np.nan: None, 'nan': None})
@@ -399,7 +388,7 @@ def insert_return_idx(table_name, df, column_return):
 
 def delete_registro(table_name, where_dict):
     try:
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
 
         conditions = []
@@ -417,7 +406,7 @@ def delete_registro(table_name, where_dict):
 def delete_ids(df_idx, table_name, column_id):
     try:
         df_idx = df_idx.to_frame(name='b_reg_id')
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
         stmt = table.delete().where(table.c[column_id] == bindparam('b_reg_id'))
 
@@ -434,7 +423,7 @@ def update_all(table_name, column_id, df_dato, col_dato):
         params = [{'_id' if k[0] == column_id else k[0]: k[1]
                    for k in d.items()} for d in df_dato.to_dict('records')]
 
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
         stmt = table.update().where(table.c[column_id] == bindparam('_id')).values({col_dato: bindparam(col_dato)})
 
@@ -448,7 +437,7 @@ def update_all(table_name, column_id, df_dato, col_dato):
 
 def get_column_unique(table_name, where_dict, get_column):
     try:
-        metadata_obj = MetaData(bind=engine)
+        metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
 
         conditions = []
@@ -495,4 +484,49 @@ def get_reglas(id_plan):
         return df
     except Exception as e:
         logging.error('%s - %s', 'get_pagos_incluidos', str(e))
+        raise Exception()
+    
+def get_ejecutor_plan(id_ejecutor):
+    try:
+        metadata_obj = MetaData()
+        ejecutor = Table('Ejecutor', metadata_obj, autoload_with=engine)
+        tip_estado = Table('Tipos_Estado', metadata_obj, autoload_with=engine)
+        plan = Table('Plan', metadata_obj, autoload_with=engine)
+
+        df = None
+
+        with engine.connect() as conn:
+            result = conn.execute(select('*').select_from(ejecutor.join(tip_estado, tip_estado.c['tes_id'] == ejecutor.c['ejec_id_tes'])
+                                  .join(plan, plan.c['plan_id'] == ejecutor.c['ejec_id_plan'])
+                                  ).where(ejecutor.c['ejec_id'] == id_ejecutor))
+            df = pd.DataFrame(result.fetchall())
+            if len(df) == 0:
+                return df
+            df.columns = result.keys()
+
+        df = df.dropna(axis='columns', how='all')
+
+        return df
+    except Exception as e:
+        logging.error('%s - %s', 'get_ejecutor_plan', str(e))
+        raise Exception()
+    
+def insert_table(table_name, df=None, dict=None):
+    try:
+        metadata_obj = MetaData()
+        table = Table(table_name, metadata_obj, autoload_with=engine)
+
+        if df:
+            df = df.replace({np.nan: None, 'nan': None})
+            insert_dict = df.to_dict('records')
+        else:
+            insert_dict = []
+            insert_dict.append(dict)
+
+        with engine.connect() as conn:
+            conn.execute(table.insert(), insert_dict)
+            conn.commit()
+
+    except Exception as e:
+        logging.error('%s - %s', 'insert_table', str(e))
         raise Exception()

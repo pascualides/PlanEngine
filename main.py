@@ -1,5 +1,5 @@
 import sys
-from gestor_reglas import GestorEjecucion
+from gestor_reglas import GestorEjecucion, iniciar_ejecucion
 #from pandas import DataFrame
 import pandas as pd
 from datetime import datetime
@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
     print('Inicio', datetime.now())
 
+    df = iniciar_ejecucion(2)
+    sys.exit(0)
+
     # input_df = pd.DataFrame(data=[
     #     {'Comprobante': 1, 'Detalle': 'Automotor', 'Valor': 1000},
     #     {'Comprobante': 1, 'Detalle': 'Automotor', 'Valor': 2000},
@@ -17,11 +20,6 @@ if __name__ == '__main__':
     # ])
     
     # input_df = pd.read_csv('archivos/Motos.csv')
-
-
-    input_df = pd.read_csv('archivos/motos_menos_300.csv')
-    par_df = pd.read_csv('archivos/Parametros2.csv')
-    par_gral_df = pd.read_csv('archivos/Parametros_generales.csv')
 
     
     try:
