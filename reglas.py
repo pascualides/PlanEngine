@@ -1,5 +1,7 @@
-from etlrules.backends.pandas import ProjectRule, RenameRule, SortRule, FilterRule, AddNewColumnRule, VConcatRule, DateTimeDiffRule, IfThenElseRule, InnerJoinRule, RoundRule
-from etlrules.rule import BaseRule, UnaryOpBaseRule
+from etlrules.backends.pandas import ProjectRule, RenameRule, SortRule, FilterRule, AddNewColumnRule, VConcatRule, DateTimeDiffRule
+from etlrules.backends.pandas import IfThenElseRule, InnerJoinRule, RoundRule, RulesBlock as RulesBlockBase
+from etlrules.data import RuleData
+from etlrules.rule import UnaryOpBaseRule
 import pandas as pd
 
 
@@ -66,12 +68,7 @@ class StrReplaceRule(UnaryOpBaseRule):
 class IfThenElseCalcRule(UnaryOpBaseRule):
     def __init__(self, condition_expression, true_expr, false_expr=None,
                  named_input=None, named_output=None, output_column="RES"):
-        """
-        condition   -> expresión string evaluable por df.eval(), ej: "col1 > 100 and col2 < 50"
-        true_expr   -> string con la fórmula a aplicar cuando la condición es True (ej: "col1 * col2 - col3")
-        false_expr  -> string con la fórmula a aplicar cuando la condición es False. Opcional.
-        result_column -> nombre de la columna donde guardar el resultado
-        """
+        
         super().__init__()
         self.condition = condition_expression
         self.true_expr = true_expr
@@ -114,6 +111,20 @@ class GroupByRule(UnaryOpBaseRule):
         # guardo salida
         data.set_named_output(self.named_output, df)
 
+
+class RulesBlock(RulesBlockBase):
+    def apply(self, data):
+        UnaryOpBaseRule.apply(self, data)
+        data2 = RuleData(
+            main_input=self._get_input_df(data),
+            named_inputs={k: v for k, v in data.get_named_outputs()},
+            strict=self.strict
+        )
+        for rule in self._rules:
+            rule.apply(data2)
+        self._set_output_df(data, data2.get_main_output())
+
+
 RULES_MAP = {
     "SortRule": SortRule,
     "ProjectRule": ProjectRule,
@@ -130,4 +141,5 @@ RULES_MAP = {
     "IfThenElseRule": IfThenElseRule,
     "InnerJoinRule": InnerJoinRule,
     "RoundRule": RoundRule,
+    "RulesBlock": RulesBlock,
 }

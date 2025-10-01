@@ -1,10 +1,12 @@
+from time import sleep
 from DB.database_cnx import get_registros_by_id, get_registro_by_params, get_reglas, get_ejecutor_plan, insert_table, update_registro_estado
-#from etlrules.backends.pandas import ProjectRule, RenameRule, SortRule, FilterRule, AddNewColumnRule, VConcatRule
 from etlrules import Plan, RuleData, RuleEngine
 from reglas import RULES_MAP
 import pandas as pd
 import logging
 from datetime import datetime
+
+PROCESANDO = False
 
 class GestorEjecucion:
     def __init__(
@@ -58,6 +60,32 @@ class GestorEjecucion:
         return self.data
 
 
+def get_regla_parametrizada(parametros_df, reglas_secundarias=None):
+    params_dict = {}
+    for _, par_row in parametros_df.iterrows():
+                if par_row['tip_par_tipo'] == 'lista':
+                    params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].to_list()
+                elif par_row['tip_par_tipo'] == 'unico':
+                    params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0]
+                elif par_row['tip_par_tipo'] == 'boolean':
+                    params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0] == 'True'
+                elif par_row['tip_par_tipo'] == 'int':
+                    params_dict[par_row['tip_par_nombre_int']] = int(parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0])
+    if reglas_secundarias:
+        params_dict['rules'] = reglas_secundarias
+    regla_obj = RULES_MAP.get(parametros_df['tip_reg_nombre_int'].iloc[0])
+    return regla_obj(**params_dict)
+
+
+def get_reglas_secundarias(reglas_df):
+    list_reglas = []
+    for row in reglas_df['reg_id'].unique():
+        parametros_df = reglas_df.loc[reglas_df['reg_id'] == row]
+        regla = get_regla_parametrizada(parametros_df)
+        list_reglas.append(regla)
+    return list_reglas
+
+
 def get_plan_df(id_plan):
     plan = Plan()
     plan_df = get_registros_by_id('Plan', 'plan_id', [id_plan])
@@ -67,34 +95,39 @@ def get_plan_df(id_plan):
     reglas_df = get_reglas(id_plan)
     if len(reglas_df) == 0:
         raise Exception(f'El plan con id {id_plan} no tiene reglas asociadas')
-    reglas_df = reglas_df.sort_values(by='reg_orden')
 
-    for row in reglas_df['reg_id'].unique():
+    #Dividir en reglas principlales y secundarias
+    ids_regla_bloque = []
+    if 'reg_bloque_regla_id' in reglas_df.columns:
+        reglas_sec_df = reglas_df[~reglas_df['reg_bloque_regla_id'].isna()].sort_values(by='reg_orden')
+        reglas_df = reglas_df[reglas_df['reg_bloque_regla_id'].isna()].sort_values(by='reg_orden')
+
+        ids_regla_bloque = reglas_sec_df['reg_bloque_regla_id'].unique().tolist()
+
+    for id_regla in reglas_df['reg_id'].unique(): #For por regla principal
         try:
-            params_dict = {}
-            parametros_df = reglas_df.loc[reglas_df['reg_id'] == row]
-            for _, par_row in parametros_df.iterrows():
-                if par_row['tip_par_tipo'] == 'lista':
-                    params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].to_list()
-                elif par_row['tip_par_tipo'] == 'unico':
-                    params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0]
-                elif par_row['tip_par_tipo'] == 'boolean':
-                    params_dict[par_row['tip_par_nombre_int']] = parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0] == 'True'
-                elif par_row['tip_par_tipo'] == 'int':
-                    params_dict[par_row['tip_par_nombre_int']] = int(parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0])
+            list_reglas_sec = None
+            #ver si el id esta en los unique
+            if id_regla in ids_regla_bloque:
+                #si es asi crear primero esas reglas, almacenarlas
+                list_reglas_sec = get_reglas_secundarias(reglas_sec_df[reglas_sec_df['reg_bloque_regla_id'] == id_regla])
 
-            regla_obj = RULES_MAP.get(parametros_df['tip_reg_nombre_int'].iloc[0])
+            parametros_df = reglas_df.loc[reglas_df['reg_id'] == id_regla]
+            #Si list_reglas_sec tiene valores, se agrega a los parametros como "rules" para que se ejecute en bloque de reglas
+            regla = get_regla_parametrizada(parametros_df, list_reglas_sec)
 
-            plan.add_rule(regla_obj(**params_dict))
+            plan.add_rule(regla)
         except Exception as e:
-            error = f'Error al cargar la regla {row} del plan {id_plan}:\n {type(e).__name__}: {e}'
+            error = f'Error al cargar la regla {id_regla} del plan {id_plan}:\n {type(e).__name__}: {e}'
             raise Exception(error) from None
 
     return plan
 
+
 def set_estado_ejecutor(id_ejecutor, id_estado):
     insert_table("Estados", dict={'est_id_tipo': id_estado, 'est_id_ejec': id_ejecutor})
     update_registro_estado("Ejecutor", {'ejec_id': id_ejecutor}, {'ejec_id_tes': id_estado})
+
 
 def iniciar_ejecucion(id_ejecutor):
     #Buscar ejecutor con estado y plan
@@ -124,7 +157,7 @@ def iniciar_ejecucion(id_ejecutor):
             raise Exception(f'Error al leer la entrada {row["ent_nombre"]} desde {row["ent_ubicacion"]}:\n {type(e).__name__}: {e}') from None
 
     #Buscar salidas
-    salidas = get_registro_by_params('SalidasEJE', {'sal_ejec_id': id_ejecutor})
+    salidas = get_registro_by_params('Salidas', {'sal_ejec_id': id_ejecutor})
         #Tirar error si no hay salidas
     if len(salidas) == 0:
         set_estado_ejecutor(id_ejecutor, 4)
@@ -158,4 +191,24 @@ def iniciar_ejecucion(id_ejecutor):
         result.to_csv(f"Archivos/Salida/{result_name}.csv",sep=';', index=False)
     #Estado finalizado
     set_estado_ejecutor(id_ejecutor, 3)
+
+
+def ejecucion_automatica():
+    global PROCESANDO
+    #Buscar ejecutores pendientes
+    if PROCESANDO:
+       return
+    
+    PROCESANDO = True
+     
+    ejecutores = get_registro_by_params('Ejecutor', {'ejec_id_tes': 1})
+    if len(ejecutores) > 0:
+        print('Ejecutando')
+        for _, row in ejecutores.iterrows():
+            try:
+                iniciar_ejecucion(int(row['ejec_id']))
+            except Exception as e:
+                logging.error(f'Error al ejecutar el ejecutor {row["ejec_id"]}:\n {type(e).__name__}: {e}')
+
+    PROCESANDO = False
     
