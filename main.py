@@ -1,7 +1,6 @@
 import sys
-from gestor_reglas import GestorEjecucion, iniciar_ejecucion, ejecucion_automatica
+from MotorReglas.gestor_reglas import GestorEjecucion, iniciar_ejecucion, ejecucion_automatica
 from datetime import datetime
-from reglas import RULES_MAP
 import pycron
 
 @pycron.cron("* * * * * */5")

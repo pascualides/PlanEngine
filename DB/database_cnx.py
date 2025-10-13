@@ -511,7 +511,7 @@ def get_ejecutor_plan(id_ejecutor):
         logging.error('%s - %s', 'get_ejecutor_plan', str(e))
         raise Exception()
     
-def insert_table(table_name, df=None, dict=None):
+def insert_table(table_name, df=None, dict=None, list_dict=None):
     try:
         metadata_obj = MetaData()
         table = Table(table_name, metadata_obj, autoload_with=engine)
@@ -519,6 +519,8 @@ def insert_table(table_name, df=None, dict=None):
         if df:
             df = df.replace({np.nan: None, 'nan': None})
             insert_dict = df.to_dict('records')
+        elif list_dict:
+            insert_dict = list_dict
         else:
             insert_dict = []
             insert_dict.append(dict)

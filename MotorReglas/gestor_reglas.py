@@ -1,12 +1,14 @@
 from time import sleep
 from DB.database_cnx import get_registros_by_id, get_registro_by_params, get_reglas, get_ejecutor_plan, insert_table, update_registro_estado
-from etlrules import Plan, RuleData, RuleEngine
-from reglas import RULES_MAP
+from etlrules import Plan, RuleData
+from MotorReglas.ruleEngine import RuleEngine
+from MotorReglas.reglas import RULES_MAP
 import pandas as pd
 import logging
 from datetime import datetime
+from Utils.logger import Logger
 
-PROCESANDO = False
+CHECKPOINT = None
 
 class GestorEjecucion:
     def __init__(
@@ -73,16 +75,21 @@ def get_regla_parametrizada(parametros_df, reglas_secundarias=None):
                     params_dict[par_row['tip_par_nombre_int']] = int(parametros_df.loc[parametros_df['par_id'] == par_row['par_id']]['val_valor'].iloc[0])
     if reglas_secundarias:
         params_dict['rules'] = reglas_secundarias
+    params_dict['name'] = parametros_df['reg_id'].iloc[0]
     regla_obj = RULES_MAP.get(parametros_df['tip_reg_nombre_int'].iloc[0])
     return regla_obj(**params_dict)
 
 
 def get_reglas_secundarias(reglas_df):
     list_reglas = []
-    for row in reglas_df['reg_id'].unique():
-        parametros_df = reglas_df.loc[reglas_df['reg_id'] == row]
-        regla = get_regla_parametrizada(parametros_df)
-        list_reglas.append(regla)
+    try:
+        for row in reglas_df['reg_id'].unique():
+            parametros_df = reglas_df.loc[reglas_df['reg_id'] == row]
+            regla = get_regla_parametrizada(parametros_df)
+            list_reglas.append(regla)
+    except Exception as e:
+        error = f'Error al cargar la regla secundaria {row}:\n {type(e).__name__}: {e}'
+        raise Exception(error) from None
     return list_reglas
 
 
@@ -119,6 +126,7 @@ def get_plan_df(id_plan):
             plan.add_rule(regla)
         except Exception as e:
             error = f'Error al cargar la regla {id_regla} del plan {id_plan}:\n {type(e).__name__}: {e}'
+            Logger.error(error)
             raise Exception(error) from None
 
     return plan
@@ -133,11 +141,15 @@ def iniciar_ejecucion(id_ejecutor):
     #Buscar ejecutor con estado y plan
     ejecutor = get_ejecutor_plan(id_ejecutor)
     if len(ejecutor) == 0:
-        raise Exception(f'No se encontró el ejecutor con id {id_ejecutor}')
+        msj_error = f'No se encontró el ejecutor con id {id_ejecutor}'
+        Logger.error(msj_error)
+        raise Exception(msj_error)
 
     #Validar estado
     if ejecutor['tes_nombre'].iloc[0] != 'PENDIENTE':
-        raise Exception(f'El ejecutor con id {id_ejecutor} no está en estado PENDIENTE')
+        msj_error= f'El ejecutor con id {id_ejecutor} no está en estado PENDIENTE'
+        Logger.error(msj_error)
+        raise Exception(msj_error)
     
     #Poner a procesando 
     set_estado_ejecutor(id_ejecutor, 2)
@@ -147,21 +159,27 @@ def iniciar_ejecucion(id_ejecutor):
     #Tirar error si no hay entradas
     if len(entradas) == 0:
         set_estado_ejecutor(id_ejecutor, 4)
-        raise Exception(f'No se encontraron entradas para el ejecutor con id {id_ejecutor}')
+        msj_error = f'No se encontraron entradas para el ejecutor con id {id_ejecutor}'
+        Logger.error(msj_error)
+        raise Exception(msj_error)
     input = {}
     for _, row in entradas.iterrows():
         try:
             input[row['ent_nombre']] = pd.read_csv(row['ent_ubicacion'])
         except Exception as e:
             set_estado_ejecutor(id_ejecutor, 4)
-            raise Exception(f'Error al leer la entrada {row["ent_nombre"]} desde {row["ent_ubicacion"]}:\n {type(e).__name__}: {e}') from None
+            msj_error = f'Error al leer la entrada {row["ent_nombre"]} desde {row["ent_ubicacion"]}:\n {type(e).__name__}: {e}'
+            Logger.error(msj_error)
+            raise Exception(msj_error) from None
 
     #Buscar salidas
     salidas = get_registro_by_params('Salidas', {'sal_ejec_id': id_ejecutor})
         #Tirar error si no hay salidas
     if len(salidas) == 0:
         set_estado_ejecutor(id_ejecutor, 4)
-        raise Exception(f'No se encontraron salidas para el ejecutor con id {id_ejecutor}')
+        msj_error = f'No se encontraron salidas para el ejecutor con id {id_ejecutor}'
+        Logger.error(msj_error)
+        raise Exception(msj_error)
         
     #Armar rule data
     data = RuleData(named_inputs=input)
@@ -205,10 +223,32 @@ def ejecucion_automatica():
     if len(ejecutores) > 0:
         print('Ejecutando')
         for _, row in ejecutores.iterrows():
+            Logger.set_ejecutor(row['ejec_id'])
             try:
                 iniciar_ejecucion(int(row['ejec_id']))
             except Exception as e:
-                logging.error(f'Error al ejecutar el ejecutor {row["ejec_id"]}:\n {type(e).__name__}: {e}')
+                logging.error(f'Error en la ejecucion {row["ejec_id"]}:\n {type(e).__name__}: {e}')
+        print("Guardando logs")
+        id_ejec = Logger.get_ejecutor()
+        logs = Logger.get_logs()
+        guardar_logs(id_ejec, logs)
+        Logger.clear()
 
     PROCESANDO = False
     
+
+def guardar_logs(id_ejec:int, logs:list ):
+    if len(logs) > 0:
+        logs_db = [
+        {
+            'log_tipo': log.tipo,
+            'log_msg': log.mensaje,
+            'log_fecha_inicio': log.inicio,
+            'log_fecha_fin': log.fin,
+            'log_duracion': log.duracion,
+            'log_id_regla': log.regla,
+            'log_id_ejecutor': id_ejec
+        }
+        for log in logs
+        ]
+        insert_table('Logs', list_dict=logs_db)

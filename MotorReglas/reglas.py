@@ -3,15 +3,17 @@ from etlrules.backends.pandas import IfThenElseRule, InnerJoinRule, RoundRule, R
 from etlrules.data import RuleData
 from etlrules.rule import UnaryOpBaseRule
 import pandas as pd
-
+from datetime import datetime
+from Utils.logger import Logger
 
 
 class SumColumnsRule(UnaryOpBaseRule):
-    def __init__(self, columns, named_input='main', named_output='main'):
+    def __init__(self, columns, named_input='main', named_output='main', name=None):
         super().__init__()
         self.columns = columns
         self.named_input = named_input
         self.named_output = named_output
+        self.name = name
 
     def apply(self, data):
         super().apply(data)
@@ -21,13 +23,14 @@ class SumColumnsRule(UnaryOpBaseRule):
         self._set_output_df(data, df)
 
 class ConvertToDatetimeRule(UnaryOpBaseRule):
-    def __init__(self, column, date_format=None, dayfirst=False, named_input=None, named_output=None):
+    def __init__(self, column, date_format=None, dayfirst=False, named_input=None, named_output=None, name=None):
         super().__init__()
         self.column = column
         self.date_format = date_format
         self.dayfirst = dayfirst
         self.named_input = named_input
         self.named_output = named_output
+        self.name = name
     def apply(self, data):
         super().apply(data)
         df = self._get_input_df(data)
@@ -36,13 +39,14 @@ class ConvertToDatetimeRule(UnaryOpBaseRule):
         self._set_output_df(data, df)
 
 class MeltDataframeRule(UnaryOpBaseRule):
-    def __init__(self, id_vars,  var_name, value_name, named_input=None, named_output=None):
+    def __init__(self, id_vars,  var_name, value_name, named_input=None, named_output=None, name=None):
         super().__init__()
         self.id_vars = id_vars
         self.var_name = var_name
         self.value_name = value_name
         self.named_input = named_input
         self.named_output = named_output
+        self.name = name
     def apply(self, data):
         super().apply(data)
         df = self._get_input_df(data)
@@ -50,7 +54,7 @@ class MeltDataframeRule(UnaryOpBaseRule):
         self._set_output_df(data, df)
 
 class StrReplaceRule(UnaryOpBaseRule):
-    def __init__(self, column, pattern, replace_value, final_type=str, named_input=None, named_output=None):
+    def __init__(self, column, pattern, replace_value, final_type=str, named_input=None, named_output=None, name=None):
         super().__init__()
         self.column = column
         self.final_type = final_type
@@ -58,6 +62,7 @@ class StrReplaceRule(UnaryOpBaseRule):
         self.replace_value = replace_value
         self.named_input = named_input
         self.named_output = named_output
+        self.name = name
     def apply(self, data):
         super().apply(data)
         df = self._get_input_df(data)
@@ -67,7 +72,7 @@ class StrReplaceRule(UnaryOpBaseRule):
 
 class IfThenElseCalcRule(UnaryOpBaseRule):
     def __init__(self, condition_expression, true_expr, false_expr=None,
-                 named_input=None, named_output=None, output_column="RES"):
+                 named_input=None, named_output=None, output_column="RES", name=None):
         
         super().__init__()
         self.condition = condition_expression
@@ -76,6 +81,7 @@ class IfThenElseCalcRule(UnaryOpBaseRule):
         self.named_input = named_input
         self.named_output = named_output
         self.result_column = output_column
+        self.name = name
 
     def apply(self, data):
         # obtengo el df
@@ -95,13 +101,14 @@ class IfThenElseCalcRule(UnaryOpBaseRule):
 
 
 class GroupByRule(UnaryOpBaseRule):
-    def __init__(self, columns, agg, named_input=None, named_output=None):
+    def __init__(self, columns, agg, named_input=None, named_output=None, name=None):
       
         super().__init__()
         self.columns = columns
         self.agg = agg
         self.named_input = named_input
         self.named_output = named_output
+        self.name = name
 
     def apply(self, data):
         # obtengo el df
@@ -113,6 +120,9 @@ class GroupByRule(UnaryOpBaseRule):
 
 
 class RulesBlock(RulesBlockBase):
+    def __init__(self, rules, named_input=None, named_output=None, name=None, description=None, strict=True):
+        super().__init__(rules, named_input, named_output, name, description, strict)
+
     def apply(self, data):
         UnaryOpBaseRule.apply(self, data)
         data2 = RuleData(
@@ -121,7 +131,14 @@ class RulesBlock(RulesBlockBase):
             strict=self.strict
         )
         for rule in self._rules:
-            rule.apply(data2)
+            try:
+                inicio = datetime.now()
+                rule.apply(data2)
+                Logger.info(inicio, datetime.now(), int(rule.get_name()))
+            except Exception as e:
+                msj_error = f"Error al ejecutar la regla secundaria regla id: {rule.get_name()}: {type(e).__name__}: {e}"
+                Logger.error_regla(msj_error, inicio, datetime.now(), int(rule.get_name()))
+                raise Exception(msj_error) from None
         self._set_output_df(data, data2.get_main_output())
 
 
