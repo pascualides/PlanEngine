@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from Utils.logger import Logger
 
-CHECKPOINT = None
+PROCESANDO = False
 
 class GestorEjecucion:
     def __init__(
