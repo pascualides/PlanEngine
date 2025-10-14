@@ -29,8 +29,8 @@ class Logger:
 
     @classmethod
     @ensure_instance
-    def info(cls, inicio: datetime, fin: datetime, regla: int):
-        log = Log("INFO", fin, inicio, regla)
+    def info(cls, inicio: datetime, fin: datetime, regla: int, dim_df_entrada=None, dim_df_salida=None):
+        log = Log("INFO", fin, inicio, regla, dim_df_entrada=dim_df_entrada, dim_df_salida=dim_df_salida)
         cls._instance.logs.append(log)
         return log
     

@@ -28,7 +28,16 @@ class RuleEngine(RuleEngineBase):
                     inicio = datetime.now()
                     try:
                         rule.apply(data)
-                        Logger.info(inicio, datetime.now(), int(rule.get_name()))
+                        shape_salida = None
+                        shape_entrada = None
+                        if rule.named_output:
+                            shape_salida = data.get_named_output(rule.named_output).shape
+                        else:
+                            shape_salida = data.get_main_output().shape
+
+                        if hasattr(rule, "named_input"):
+                            shape_entrada = data.get_named_output(rule.named_input).shape
+                        Logger.info(inicio, datetime.now(), int(rule.get_name()), shape_entrada, shape_salida)
                     except Exception as e:
                         msj_error = f"Error al ejecutar regla id: {rule.get_name()}: {type(e).__name__}: {e}"
                         Logger.error_regla(msj_error, inicio, datetime.now(), int(rule.get_name()))

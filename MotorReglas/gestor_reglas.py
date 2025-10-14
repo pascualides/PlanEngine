@@ -7,8 +7,11 @@ import pandas as pd
 import logging
 from datetime import datetime
 from Utils.logger import Logger
+import pickle
+import os
 
 PROCESANDO = False
+CHECKPOINT = None
 
 class GestorEjecucion:
     def __init__(
@@ -138,6 +141,7 @@ def set_estado_ejecutor(id_ejecutor, id_estado):
 
 
 def iniciar_ejecucion(id_ejecutor):
+    global CHECKPOINT
     #Buscar ejecutor con estado y plan
     ejecutor = get_ejecutor_plan(id_ejecutor)
     if len(ejecutor) == 0:
@@ -185,8 +189,9 @@ def iniciar_ejecucion(id_ejecutor):
     data = RuleData(named_inputs=input)
    
     #Buscar plan
+    id_plan = int(ejecutor['plan_id'].iloc[0])
     try:
-        plan = get_plan_df(int(ejecutor['plan_id'].iloc[0]))
+        plan = get_plan_df(id_plan)
     except Exception as e:
         set_estado_ejecutor(id_ejecutor, 4)
         raise e
@@ -200,6 +205,8 @@ def iniciar_ejecucion(id_ejecutor):
     except Exception as e:
         set_estado_ejecutor(id_ejecutor, 4)
         error = f" Error al ejecutar el plan {ejecutor['plan_id'].iloc[0]}: \n{type(e).__name__}: {e}"
+        CHECKPOINT = {'id_ejecutor': id_ejecutor, 'plan': id_plan, 'data_named_outputs': data.named_outputs}
+        save_checkpoint(CHECKPOINT)
         raise Exception(error) from None
 
     #Guardar salidas
@@ -213,6 +220,7 @@ def iniciar_ejecucion(id_ejecutor):
 
 def ejecucion_automatica():
     global PROCESANDO
+    global CHECKPOINT
     #Buscar ejecutores pendientes
     if PROCESANDO:
        return
@@ -247,8 +255,20 @@ def guardar_logs(id_ejec:int, logs:list ):
             'log_fecha_fin': log.fin,
             'log_duracion': log.duracion,
             'log_id_regla': log.regla,
+            'log_dim_entrada': log.dim_df_entrada,
+            'log_dim_salida': log.dim_df_salida,
             'log_id_ejecutor': id_ejec
         }
         for log in logs
         ]
         insert_table('Logs', list_dict=logs_db)
+
+def save_checkpoint(CHECKPOINT):
+    folder_path = f"Archivos/Checkpoints/{CHECKPOINT.get('id_ejecutor')}"
+    file_path = os.path.join(folder_path, "dataframes.pkl")
+
+    # Crear la carpeta si no existe
+    os.makedirs(folder_path, exist_ok=True)
+
+    with open(file_path, 'wb') as f:
+        pickle.dump(CHECKPOINT, f)  
