@@ -96,7 +96,7 @@ def get_reglas_secundarias(reglas_df):
     return list_reglas
 
 
-def get_plan_df(id_plan):
+def get_plan_df(id_plan, iniciar_desde=None):
     plan = Plan()
     plan_df = get_registros_by_id('Plan', 'plan_id', [id_plan])
     if len(plan_df) != 1:
@@ -111,6 +111,13 @@ def get_plan_df(id_plan):
     if 'reg_bloque_regla_id' in reglas_df.columns:
         reglas_sec_df = reglas_df[~reglas_df['reg_bloque_regla_id'].isna()].sort_values(by='reg_orden')
         reglas_df = reglas_df[reglas_df['reg_bloque_regla_id'].isna()].sort_values(by='reg_orden')
+
+        #Filtrar si queremos iniciar desde una regla en particular
+        if iniciar_desde is not None:
+            if iniciar_desde in reglas_df['reg_id'].values:
+                reglas_df = reglas_df[reglas_df['reg_orden'] >= reglas_df.loc[reglas_df['reg_id'] == iniciar_desde, 'reg_orden'].iloc[0]]
+            else:
+                raise Exception(f'No se encontró la regla de inicio con id {iniciar_desde} en el plan {id_plan}')
 
         ids_regla_bloque = reglas_sec_df['reg_bloque_regla_id'].unique().tolist()
 
@@ -159,22 +166,13 @@ def iniciar_ejecucion(id_ejecutor):
     set_estado_ejecutor(id_ejecutor, 2)
     
     #Buscar entradas
-    entradas = get_registro_by_params('Entradas', {'ent_id_ejecutor': id_ejecutor})
-    #Tirar error si no hay entradas
-    if len(entradas) == 0:
-        set_estado_ejecutor(id_ejecutor, 4)
-        msj_error = f'No se encontraron entradas para el ejecutor con id {id_ejecutor}'
-        Logger.error(msj_error)
-        raise Exception(msj_error)
-    input = {}
-    for _, row in entradas.iterrows():
-        try:
-            input[row['ent_nombre']] = pd.read_csv(row['ent_ubicacion'])
-        except Exception as e:
-            set_estado_ejecutor(id_ejecutor, 4)
-            msj_error = f'Error al leer la entrada {row["ent_nombre"]} desde {row["ent_ubicacion"]}:\n {type(e).__name__}: {e}'
-            Logger.error(msj_error)
-            raise Exception(msj_error) from None
+    #Si hay checkpoint cargarlo
+    reintento_de = None
+    if 'ejec_reintento_de' in ejecutor.columns:
+        reintento_de = int(ejecutor['ejec_reintento_de'].iloc[0])
+
+    #Si es reintento carga desde checkpoint, sino desde entradas
+    input = set_input(id_ejecutor, reintento_de) 
 
     #Buscar salidas
     salidas = get_registro_by_params('Salidas', {'sal_ejec_id': id_ejecutor})
@@ -190,8 +188,14 @@ def iniciar_ejecucion(id_ejecutor):
    
     #Buscar plan
     id_plan = int(ejecutor['plan_id'].iloc[0])
+
+    #Si hay checkpoint cargar desde ahi
+    iniciar_desde = None
+    if 'ejec_iniciar_desde' in ejecutor.columns:
+        iniciar_desde = int(ejecutor['ejec_iniciar_desde'].iloc[0])
+
     try:
-        plan = get_plan_df(id_plan)
+        plan = get_plan_df(id_plan, iniciar_desde)
     except Exception as e:
         set_estado_ejecutor(id_ejecutor, 4)
         raise e
@@ -272,3 +276,38 @@ def save_checkpoint(CHECKPOINT):
 
     with open(file_path, 'wb') as f:
         pickle.dump(CHECKPOINT, f)  
+
+def set_input(id_ejecutor:int, reintento:int=None):
+    input = {}
+    #Si es reintento cargar checkpoint
+    if reintento:
+        try:
+            #buscar el archivo,
+            path = f"Archivos/Checkpoints/{reintento}/dataframes.pkl"
+            with open(path, 'rb') as f:
+                dataframes = pickle.load(f)
+            input = dataframes.get('data_named_outputs')
+            return input
+        except Exception as e:
+            set_estado_ejecutor(id_ejecutor, 4)
+            msj_error = f'Error al cargar el checkpoint del ejecutor {reintento} para el ejecutor {id_ejecutor}:\n {type(e).__name__}: {e}'
+            Logger.error(msj_error)
+            raise Exception(msj_error) from None
+
+    entradas = get_registro_by_params('Entradas', {'ent_id_ejecutor': id_ejecutor})
+    #Tirar error si no hay entradas
+    if len(entradas) == 0:
+        set_estado_ejecutor(id_ejecutor, 4)
+        msj_error = f'No se encontraron entradas para el ejecutor con id {id_ejecutor}'
+        Logger.error(msj_error)
+        raise Exception(msj_error)
+    
+    for _, row in entradas.iterrows():
+        try:
+            input[row['ent_nombre']] = pd.read_csv(row['ent_ubicacion'])
+        except Exception as e:
+            set_estado_ejecutor(id_ejecutor, 4)
+            msj_error = f'Error al leer la entrada {row["ent_nombre"]} desde {row["ent_ubicacion"]}:\n {type(e).__name__}: {e}'
+            Logger.error(msj_error)
+            raise Exception(msj_error) from None
+    return input
