@@ -18,7 +18,6 @@ db = "RulesEngine"
 # engine = create_engine(f'oracle+cx_oracle://{usr}:{pwd}@{host}:{port}/{db}', echo=False, max_identifier_length=128)
 engine = create_engine(f'postgresql+psycopg2://{usr}:{pwd}@{host}:{port}/{db}')
 
-get_registros_by_id, get_registro_by_params, get_reglas, get_ejecutor_plan, insert_table, update_registro_estado
 
 def get_registro_by_params(table_name, where_dict):
     try:
